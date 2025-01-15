@@ -1,46 +1,46 @@
-name: CI Workflow
+name: PHPUnit Tests with Coverage
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+
     steps:
-      # Checkout do código com fetch-depth > 1
+      # Checkout do código
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Baixar todo o histórico de commits
+        uses: actions/checkout@v2
 
       # Configuração do PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.3'  # Ajuste a versão do PHP conforme necessário
 
-      # Instalação das dependências
+      # Instalar dependências
       - name: Install dependencies
         run: |
           composer install
 
-      # Execução dos testes PHPUnit e exibição do resultado
-      - name: Run PHPUnit tests
-        run: |
-          ./vendor/bin/phpunit --coverage-clover=coverage.xml --verbose  # Adicionando --verbose para mostrar o resultado
+      # Rodar os testes com PHPUnit e gerar o relatório de cobertura
+      - name: Run PHPUnit tests with coverage
+        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml -v
 
-      # Exibição do arquivo de cobertura
-      - name: Display Coverage Results
-        run: |
-          cat coverage.xml  # Exibe o conteúdo da cobertura gerada (opcional)
-
-      # Envia a cobertura de código para o Codecov
+      # Upload do relatório de cobertura para o Codecov (se configurado)
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          files: coverage.xml
+          file: coverage.xml
+
+      # Verificar a cobertura de código e bloquear o merge se for abaixo de 60%
+      - name: Check coverage percentage
+        run: |
+          COVERAGE=$(bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} | grep 'All Tests' | awk '{print $5}' | tr -d '%')
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "Coverage is below 60%, blocking merge!"
+            exit 1
+          fi
