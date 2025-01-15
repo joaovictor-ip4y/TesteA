@@ -1,0 +1,42 @@
+name: PHP CI with Codecov
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+
+      - name: Install dependencies
+        run: |
+          composer install
+
+      - name: Run tests
+        run: |
+          ./vendor/bin/phpunit --coverage-clover=coverage.xml
+
+      - name: Upload coverage to Codecov
+        run: bash <(curl -s https://codecov.io/bash)
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(php -r "echo (int) shell_exec('bash <(curl -s https://codecov.io/bash)');")
+          if [ $COVERAGE -lt 60 ]; then
+            echo "Code coverage is below 60%, aborting merge."
+            exit 1
+          fi
+        continue-on-error: false
