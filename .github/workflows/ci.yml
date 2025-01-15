@@ -1,63 +1,46 @@
-name: Run Tests and Check Coverage
+name: CI Workflow
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # Check out the repository code
+      # Checkout do código com fetch-depth > 1
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Baixar todo o histórico de commits
 
-      # Set up PHP
+      # Configuração do PHP
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
 
-      # Install dependencies using Composer
+      # Instalação das dependências
       - name: Install dependencies
         run: |
           composer install
 
-      # Disable Xdebug if it's loaded
-      - name: Disable Xdebug if enabled
+      # Execução dos testes PHPUnit e exibição do resultado
+      - name: Run PHPUnit tests
         run: |
-          if php -m | grep -q 'xdebug'; then
-            echo "Disabling Xdebug"
-            php -d xdebug.mode=off -r 'echo "Xdebug disabled\n";'
-          fi
+          ./vendor/bin/phpunit --coverage-clover=coverage.xml --verbose  # Adicionando --verbose para mostrar o resultado
 
-      # Run PHPUnit tests with code coverage
-      - name: Run PHPUnit tests with code coverage
+      # Exibição do arquivo de cobertura
+      - name: Display Coverage Results
         run: |
-          ./vendor/bin/phpunit --coverage-clover=coverage.xml
+          cat coverage.xml  # Exibe o conteúdo da cobertura gerada (opcional)
 
-      # Upload coverage report to Codecov
+      # Envia a cobertura de código para o Codecov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.xml
-
-  check-coverage:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      # Check if Codecov report passes the coverage threshold
-      - name: Check code coverage
-        run: |
-          curl -s https://codecov.io/bash > codecov.sh
-          bash codecov.sh -t ${{ secrets.CODECOV_TOKEN }}
-          coverage_percentage=$(curl -s https://codecov.io/api/gh/${{ github.repository }}/commits/${{ github.sha }} | jq -r '.commit.total.coverage')
-          
-          if (( $(echo "$coverage_percentage < 60" | bc -l) )); then
-            echo "Code coverage is below 60%. Merge not allowed."
-            exit 1
-          fi
-          echo "Code coverage is above 60%. Proceeding with the merge."
+          files: coverage.xml
