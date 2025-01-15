@@ -3,7 +3,7 @@
         'name' => 'yourname/yourrepository',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '8598be2120ac5a8d9d1df908497c17edcd01fc41',
+        'reference' => '641162aae365b4c47433915fe31238df7a0fa28e',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -265,7 +265,7 @@
         'yourname/yourrepository' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '8598be2120ac5a8d9d1df908497c17edcd01fc41',
+            'reference' => '641162aae365b4c47433915fe31238df7a0fa28e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
