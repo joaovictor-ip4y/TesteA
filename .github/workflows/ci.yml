@@ -1,6 +1,9 @@
-name: PHPUnit Tests with Coverage
+name: Run PHPUnit Tests and Code Coverage
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -10,37 +13,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout do código
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Configuração do PHP
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'  # Ajuste a versão do PHP conforme necessário
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
 
-      # Instalar dependências
-      - name: Install dependencies
-        run: |
-          composer install
+    - name: Install dependencies
+      run: |
+        composer install --no-interaction --prefer-dist
 
-      # Rodar os testes com PHPUnit e gerar o relatório de cobertura
-      - name: Run PHPUnit tests with coverage
-        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml -v
+    - name: Run PHPUnit tests with code coverage
+      run: ./vendor/bin/phpunit --coverage-clover=coverage.xml --verbose
 
-      # Upload do relatório de cobertura para o Codecov (se configurado)
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: coverage.xml
+    - name: Upload code coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
 
-      # Verificar a cobertura de código e bloquear o merge se for abaixo de 60%
-      - name: Check coverage percentage
-        run: |
-          COVERAGE=$(bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} | grep 'All Tests' | awk '{print $5}' | tr -d '%')
-          echo "Coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-            echo "Coverage is below 60%, blocking merge!"
-            exit 1
-          fi
+    - name: Check for code coverage percentage
+      run: |
+        coverage=$(grep -oP '(?<=<coverage[^>]*lines=")(\d+)' coverage.xml)
+        echo "Code coverage: $coverage%"
+        if [ "$coverage" -lt 60 ]; then
+          echo "Code coverage is below 60%. Exiting with failure."
+          exit 1
+        fi
